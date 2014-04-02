@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Bitwig Studio | Akai MPK49</title>
+    <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="Content-Language" content="en-us"/>
+    <meta http-equiv="imagetoolbar" content="no"/>
+    <meta name="MSSmartTagsPreventParsing" content="true"/>
+    <meta name="description" content="Using an Akai MPK49 controller in Bitwig Studio."/>
+    <meta name="keywords" content="bitwig studio akai MPK49"/>
+    <meta name="author" content="Bitwig GmbH"/>
+    <style type="text/css" media="all">@import "../doc/bitwig.css";</style>
+</head>
+
+<body>
+<div id="page-container">
+    <div id="header">
+        <div id="logo">
+        </div>
+        <div id="title">
+            <h1>AKAI &#x2013; MPK49</h1>
+        </div>
+    </div>
+    <div id="illustration">
+        <img src="MPK49.png" width="855" height="380" alt="MPK49" border="0"/>
+    </div>
+    <div id="illustration-text">
+        Important note: For the script to work, you need to load the <a href="MPK49-Bank-with-Bitwig-Studio-preset.SQS">Bitwig
+        Studio preset</a> into the MPK49 using the Akai editor.
+    </div>
+    <div id="legend">
+        <div id="global" class="legend-section">
+            <div id="global-1" class="legend-column">
+                <table class="legend-column">
+                    <thead>
+                    <tr>
+                        <th class="legend-control-column"></th>
+                        <th class="legend-explanation-column">GLOBAL</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td class="confluenceTd">S 1</td>
+                        <td class="legend-explanation-column">Shift Button</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S 2 (+shift)</td>
+                        <td class="legend-explanation-column">Next (previous) track</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S 4</td>
+                        <td class="legend-explanation-column">Previous preset
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S 5</td>
+                        <td class="legend-explanation-column">Next preset</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S 6 (+shift)</td>
+                        <td class="legend-explanation-column">Next (previous) presetcategory</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S 7 (+shift)</td>
+                        <td class="legend-explanation-column">Next (previous) preset creator</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S 8 (+shift)</td>
+                        <td class="legend-explanation-column"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="global-2" class="legend-column">
+                <table class="legend-column">
+                    <thead>
+                    <tr>
+                        <th class="legend-control-column"></th>
+                        <th class="legend-explanation-column">GLOBAL</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td class="legend-control-column">&lt;&lt; (+shift)</td>
+                        <td class="legend-explanation-column">Transport rewind (select previous track)</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">&gt;&gt; (+shift)</td>
+                        <td class="legend-explanation-column">Transport fast forward (select next track)</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">Stop (+shift)</td>
+                        <td class="legend-explanation-column">transport stop (abort automation override)</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">Play (+shift)</td>
+                        <td class="legend-explanation-column">transport play (global back to arrangement)</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">Rec (+shift)</td>
+                        <td class="legend-explanation-column">transport record (arm selected track)</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="banks" class="legend-section">
+            <div id="bank-a" class="legend-column">
+                <table class="legend-column">
+                    <thead>
+                    <tr>
+                        <th class="legend-control-column"></th>
+                        <th class="legend-explanation-column">BANK A</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td class="legend-control-column">F 1-8</td>
+                        <td class="legend-explanation-column">Parameters of the cursor device</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">K 1-8</td>
+                        <td class="legend-explanation-column">Macros of the primary instrument</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S3 (+shift)</td>
+                        <td class="legend-explanation-column">Next (previous) parameter page</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="bank-b" class="legend-column">
+                <table class="legend-column">
+                    <thead>
+                    <tr>
+                        <th class="legend-control-column"></th>
+                        <th class="legend-explanation-column">BANK B</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td class="legend-control-column">F 1-8</td>
+                        <td class="legend-explanation-column">Volume</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">K 1-8</td>
+                        <td class="legend-explanation-column">Pan</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S3 (+shift)</td>
+                        <td class="legend-explanation-column">Previous (next) track bank</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="bank-c" class="legend-column">
+                <table class="legend-column">
+                    <thead>
+                    <tr>
+                        <th class="legend-control-column"></th>
+                        <th class="legend-explanation-column">BANK C</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td class="legend-control-column">F 1-8</td>
+                        <td class="legend-explanation-column">send 1</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">K 1-8</td>
+                        <td class="legend-explanation-column">send 2</td>
+                    </tr>
+                    <tr>
+                        <td class="legend-control-column">S 3 (+shift)</td>
+                        <td class="legend-explanation-column">
+                            previous (next) track bank</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="footer">
+        Version Nr: 1.0 | Made by: Bitwig, Berlin, Germany | Contact: <a
+            href="mailto:contact@bitwig.com">contact@bitwig.com</a>, <a href="http://www.bitwig.com/">www.bitwig.com</a>
+        |
+        Package: Bitwig Factory Scripts
+    </div>
+</div>
+</body>
+</html>
