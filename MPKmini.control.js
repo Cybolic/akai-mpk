@@ -93,10 +93,10 @@ function init()
 {
 	host.getMidiInPort(0).setMidiCallback(onMidi);
 	MPKminiKeys = host.getMidiInPort(0).createNoteInput("MPKmini Keys", "?0????");
-	//MPKminiPads = host.getMidiInPort(0).createNoteInput("MPKmini Pads", "?1????");
+	MPKminiPads = host.getMidiInPort(0).createNoteInput("MPKmini Pads", "?1????");
 	
 	MPKminiKeys.setShouldConsumeEvents(false);
-	//MPKminiPads.setShouldConsumeEvents(false);
+	MPKminiPads.setShouldConsumeEvents(false);
 
 	// /////////////////////////////////////////////// host sections
 
@@ -180,7 +180,7 @@ function onMidi(status, data1, data2)
 	}
 	if (status == NOTE10 && msg >= 36 && msg <= 51)
 	{
-		cursorTrack.playNote(msg + padShift, val);
+		//cursorTrack.playNote(msg + padShift, val);
 	}
 	else if (status == CHANNEL0 && msg >= CC.K5 && msg < CC.K5 + 4)
 	{
