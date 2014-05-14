@@ -82,10 +82,10 @@ function init()
 
 	// /////////////////////////////////////////////// host sections
 
-	application = host.createApplicationSection();
-	transport = host.createTransportSection();
-	cursorTrack = host.createCursorTrackSection(2, 0);
-	cursorDevice = cursorTrack.getPrimaryInstrument();
+	application = host.createApplication();
+	transport = host.createTransport();
+	cursorTrack = host.createCursorTrack(2, 0);
+	cursorDevice = cursorTrack.getPrimaryDevice();
 	cursorTrack.getSolo().addValueObserver(function(on)
 	{
 		sendNoteOn(9, 40, on ? 1 : 0);
@@ -235,10 +235,10 @@ function onMidi(status, data1, data2)
 				}
 				break;
 			case devPageUp:
-				cursorDevice.selectPrevious();
+				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.PREVIOUS);
 				break;
 			case devPageDown:
-				cursorDevice.selectNext();
+				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.NEXT);
 				break;
 			case cursorTrackUp:
 				cursorTrack.selectPrevious();
