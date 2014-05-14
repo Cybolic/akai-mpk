@@ -93,7 +93,7 @@ function init()
 {
 	host.getMidiInPort(0).setMidiCallback(onMidi);
 	MPKminiKeys = host.getMidiInPort(0).createNoteInput("MPKmini Keys", "?0????");
-	MPKminiPads = host.getMidiInPort(0).createNoteInput("MPKmini Pads", "?1????");
+	MPKminiPads = host.getMidiInPort(0).createNoteInput("MPKmini Pads", "?9????");
 	
 	MPKminiKeys.setShouldConsumeEvents(false);
 	MPKminiPads.setShouldConsumeEvents(false);
