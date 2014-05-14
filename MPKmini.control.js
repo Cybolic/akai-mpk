@@ -7,6 +7,12 @@ host.defineSysexIdentityReply("F0 7E 00 06 02 47 7C 00 19 00 ?? ?? ?? ?? ?? ?? ?
 host.defineMidiPorts(1, 1);
 host.addDeviceNameBasedDiscoveryPair(["MPK mini"], ["MPK mini"]);
 
+// Config
+
+var VISUAL_FEEDBACK = true;
+
+// End Config
+
 var CC =
 {
 	K1 : 13,
@@ -74,11 +80,23 @@ var toggleArmCursorTrack = PC.PAD05;
 var isMapMacroPressed = false;
 var padShift = 0;
 
+var isSoloOn = false;
+var isArmOn = false;
+var presetName = "";
+var presetCategory = "";
+var presetCreator = "";
+var deviceName = "";
+var trackName = "";
+
+
 function init()
 {
 	host.getMidiInPort(0).setMidiCallback(onMidi);
-	host.getMidiInPort(0).createNoteInput("MPKmini Keys", "80????", "90????", "B001??", "B040??", "D0????", "E0????");
-	// host.getMidiInPort(0).createNoteInput("MPKmini Pads", "81????", "91????", "D1????", "E1????");
+	MPKminiKeys = host.getMidiInPort(0).createNoteInput("MPKmini Keys", "?0????");
+	//MPKminiPads = host.getMidiInPort(0).createNoteInput("MPKmini Pads", "?1????");
+	
+	MPKminiKeys.setShouldConsumeEvents(false);
+	//MPKminiPads.setShouldConsumeEvents(false);
 
 	// /////////////////////////////////////////////// host sections
 
@@ -88,9 +106,36 @@ function init()
 	cursorDevice = cursorTrack.getPrimaryDevice();
 	cursorTrack.getSolo().addValueObserver(function(on)
 	{
-		sendNoteOn(9, 40, on ? 1 : 0);
-		sendMidi(201, 0, on ? 1 : 0);
+		//sendNoteOn(9, 40, on ? 1 : 0);
+		//sendMidi(201, 0, on ? 1 : 0);
+		isSoloOn = on;
 	});
+	cursorTrack.getArm().addValueObserver(function(on)
+	{
+		isArmOn = !on;
+	});
+	cursorDevice.addPresetNameObserver(50, "None", function(on)
+	{
+		presetName = on;
+	});
+	cursorDevice.addPresetCategoryObserver(50, "None", function(on)
+	{
+		presetCategory = on;
+	});
+	cursorDevice.addPresetCreatorObserver(50, "None", function(on)
+	{
+		presetCreator = on;
+	});
+	cursorDevice.addNameObserver(50, "None", function(on)
+	{
+		deviceName = on;
+	});
+	cursorTrack.addNameObserver(50, "None", function(on)
+	{
+		trackName = on;
+	});
+
+
 	for ( var p = 0; p < 8; p++)
 	{
 		var macro = cursorDevice.getMacro(p);
@@ -147,51 +192,67 @@ function onMidi(status, data1, data2)
 		{
 			case toggleArmCursorTrack:
 				cursorTrack.getArm().toggle();
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Arm " + (isArmOn ? "On" : "Off"));
 				break;
 			case toggleSoloCursorTrack:
 				cursorTrack.getSolo().toggle();
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Solo " + (isSoloOn ? "On" : "Off"));
 				break;
 			case previousPreset:
 				cursorDevice.switchToPreviousPreset();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetName);
 				break;
 			case nextPreset:
 				cursorDevice.switchToNextPreset();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetName);
 				break;
 			case previousPresetCategory:
 				cursorDevice.switchToPreviousPresetCategory();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCategory);
 				break;
 			case nextPresetCategory:
 				cursorDevice.switchToNextPresetCategory();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCategory);
 				break;
 			case previousPresetCreator:
 				cursorDevice.switchToPreviousPresetCreator();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCreator);
 				break;
 			case nextPresetCreator:
 				cursorDevice.switchToNextPresetCreator();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCreator);
 				break;
 			case toggleArmCursorTrack + 8:
 				cursorTrack.getArm().toggle();
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Arm " + (isArmOn ? "On" : "Off"));
 				break;
 			case toggleSoloCursorTrack + 8:
 				cursorTrack.getSolo().toggle();
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Solo " + (isSoloOn ? "On" : "Off"));
 				break;
 			case previousPreset + 8:
 				cursorDevice.switchToPreviousPreset();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetName);
 				break;
 			case nextPreset + 8:
 				cursorDevice.switchToNextPreset();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetName);
 				break;
 			case previousPresetCategory + 8:
 				cursorDevice.switchToPreviousPresetCategory();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCategory);
 				break;
 			case nextPresetCategory + 8:
 				cursorDevice.switchToNextPresetCategory();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCategory);
 				break;
 			case previousPresetCreator + 8:
 				cursorDevice.switchToPreviousPresetCreator();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCreator);
 				break;
 			case nextPresetCreator + 8:
 				cursorDevice.switchToNextPresetCreator();
+				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCreator);
 				break;
 		}
 	}
@@ -226,22 +287,27 @@ function onMidi(status, data1, data2)
 				if (padShift < 88)
 				{
 					padShift += 8;
+					if(VISUAL_FEEDBACK) host.showPopupNotification("Pads Shifted: " + padShift);
 				}
 				break;
 			case shiftPadsDown:
 				if (padShift > -40)
 				{
 					padShift -= 8;
+					if(VISUAL_FEEDBACK) host.showPopupNotification("Pads Shifted: " + padShift);
 				}
 				break;
 			case devPageUp:
 				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.PREVIOUS);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Device: " + deviceName);
 				break;
 			case devPageDown:
 				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.NEXT);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Device: " + deviceName);
 				break;
 			case cursorTrackUp:
 				cursorTrack.selectPrevious();
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Track: " + trackName);
 				break;
 			case cursorTrackDown:
 				cursorTrack.selectNext();
