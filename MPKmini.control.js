@@ -8,8 +8,15 @@ host.defineMidiPorts(1, 1);
 host.addDeviceNameBasedDiscoveryPair(["MPK mini"], ["MPK mini"]);
 
 // Config
-
+  // Set default
 var VISUAL_FEEDBACK = true;
+
+  // Check if a config file is available, if yes, use the values there instead:
+try {
+	load("MPKmini.config.js");
+} catch(e) {
+	//Nothing to do here
+}
 
 // End Config
 
@@ -200,27 +207,27 @@ function onMidi(status, data1, data2)
 				break;
 			case previousPreset:
 				cursorDevice.switchToPreviousPreset();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetName);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Preset: " + presetName);
 				break;
 			case nextPreset:
 				cursorDevice.switchToNextPreset();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetName);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Preset: " + presetName);
 				break;
 			case previousPresetCategory:
 				cursorDevice.switchToPreviousPresetCategory();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCategory);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Category: " + presetCategory);
 				break;
 			case nextPresetCategory:
 				cursorDevice.switchToNextPresetCategory();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCategory);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Category: " + presetCategory);
 				break;
 			case previousPresetCreator:
 				cursorDevice.switchToPreviousPresetCreator();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCreator);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Creator: " + presetCreator);
 				break;
 			case nextPresetCreator:
 				cursorDevice.switchToNextPresetCreator();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCreator);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Creator: " + presetCreator);
 				break;
 			case toggleArmCursorTrack + 8:
 				cursorTrack.getArm().toggle();
@@ -232,27 +239,27 @@ function onMidi(status, data1, data2)
 				break;
 			case previousPreset + 8:
 				cursorDevice.switchToPreviousPreset();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetName);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Preset: " + presetName);
 				break;
 			case nextPreset + 8:
 				cursorDevice.switchToNextPreset();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetName);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Preset: " + presetName);
 				break;
 			case previousPresetCategory + 8:
 				cursorDevice.switchToPreviousPresetCategory();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCategory);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Category: " + presetCategory);
 				break;
 			case nextPresetCategory + 8:
 				cursorDevice.switchToNextPresetCategory();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCategory);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Category: " + presetCategory);
 				break;
 			case previousPresetCreator + 8:
 				cursorDevice.switchToPreviousPresetCreator();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCreator);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Creator: " + presetCreator);
 				break;
 			case nextPresetCreator + 8:
 				cursorDevice.switchToNextPresetCreator();
-				if(VISUAL_FEEDBACK) host.showPopupNotification(presetCreator);
+				if(VISUAL_FEEDBACK) host.showPopupNotification("Creator: " + presetCreator);
 				break;
 		}
 	}
