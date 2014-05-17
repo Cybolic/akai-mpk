@@ -69,7 +69,7 @@ var devPageUp = CC.PAD06;
 var devPageDown = CC.PAD02;
 var shiftPadsUp = CC.PAD07;
 var shiftPadsDown = CC.PAD03;
-var mapMacro = CC.PAD8;
+var mapMacro = CC.PAD08;
 
 // CC & PB 2 - Transport and Track
 var stop = CC.PAD13;
@@ -101,8 +101,15 @@ var browser = PC.PAD16;
 
 var isMapMacroPressed = false;
 var padShift = 0;
+var padshiftHasChanged = true;
 
 
+var isRecordOn = false;
+var recordHasChanged = true;
+var isPlayOn = false;
+var playHasChanged = true;
+var isOverdubOn = false;
+var overdubHasChanged = true;
 var isSoloOn = false;
 var soloHasChanged = true;
 var isArmOn = false;
@@ -171,6 +178,25 @@ function init()
 		isMuteOn = on;
 		muteHasChanged = true;
 	});
+
+	transport.addIsPlayingObserver(function(on)
+	{
+		isPlayingOn = on;
+		println(on);
+		playHasChanged = true;
+	});
+	transport.addIsRecordingObserver(function(on)
+	{
+		isRecordOn = on;
+		println(on);
+		recordHasChanged = true;
+	});
+	transport.addOverdubObserver(function(on)
+	{
+		isOverdubOn = on;
+		overdubHasChanged = true;
+	});
+
 	cursorDevice.addPresetNameObserver(50, "None", function(on)
 	{
 		presetName = on;
@@ -216,21 +242,23 @@ function init()
 	sendNoteOn(9, 51, 1);
 }
 
-function onMidi(status, data1, data2)
+
+var CHANNEL0 = 176;
+var CHANNEL10 = 185;
+var PROGCHANGE = 201;
+
+function onMidi(status, msg, val)
 {
-	var msg = data1;
-	var val = data2;
-	var buttonPressed = val > 0;
-	var CHANNEL0 = 176;
-	var CHANNEL10 = 185;
-	var NOTE10 = 153;
-	var PROGCHANGE = 201;
 	var lowerKnobs = msg - CC.K1 + 4;
 	var upperKnobs = msg - CC.K1 - 4;
 
-	printMidi(status, msg, val);
+	//printMidi(status, msg, val);
 
-	if (status == CHANNEL10 && msg == mapMacro) isMapMacroPressed = val > 0;
+	if (status == CHANNEL10 && msg == mapMacro)
+	{
+		isMapMacroPressed = val > 0;
+		if(isMapMacroPressed) host.showPopupNotification("MapMacro (Turn knob fully clockwise...)");
+	}
 
 	if (status == CHANNEL0 && msg >= CC.K1 && msg < CC.K1 + 4)
 	{
@@ -381,6 +409,16 @@ function onMidi(status, data1, data2)
 			case toggleMuteCursorTrack:
 				muteHasChanged = true;
 				break;
+			case play:
+				playHasChanged = true;
+				break;
+			case rec:
+				recordHasChanged = true;
+				break;
+			case od:
+				overdubHasChanged = true;
+				break;
+
 		}
 	}
 }
@@ -465,6 +503,22 @@ function flush()
 		sendMidi(185, 30, isMuteOn ? 127 : 0);
 		muteHasChanged = false;
 	}
+	if (playHasChanged)
+	{
+		sendMidi(185, 36, isPlayingOn ? 127 : 0);
+		playHasChanged = false;
+	}
+	if (recordHasChanged)
+	{
+		sendMidi(185, 37, isRecordOn ? 127 : 0);
+		recordHasChanged = false;
+	}
+	if (overdubHasChanged)
+	{
+		sendMidi(185, 38, isOverdubOn ? 127 : 0);
+		overdubHasChanged = false;
+	}
+
 }
 
 function getEncoderTarget(row, knob, val)
