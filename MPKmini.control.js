@@ -8,6 +8,7 @@ host.defineMidiPorts(1, 1);
 host.addDeviceNameBasedDiscoveryPair(["MPK mini"], ["MPK mini"]);
 
 // Config
+
   // Set default
 var VISUAL_FEEDBACK = true;
 
@@ -61,39 +62,80 @@ var PC =
 	PAD16 : 15
 };
 
+// CC & PB 1 - Navigation and Transpose + Mapping
 var cursorTrackUp = CC.PAD05;
 var cursorTrackDown = CC.PAD01;
 var devPageUp = CC.PAD06;
 var devPageDown = CC.PAD02;
 var shiftPadsUp = CC.PAD07;
 var shiftPadsDown = CC.PAD03;
-var mapMacro = CC.PAD16;
-var stop = CC.PAD14;
+var mapMacro = CC.PAD8;
+
+// CC & PB 2 - Transport and Track
+var stop = CC.PAD13;
+var play = CC.PAD14;
 var rec = CC.PAD15;
 var od = CC.PAD16;
-var note = CC.PAD09;
-var automation = CC.PAD10;
-var mixer = CC.PAD11;
-var device = CC.PAD12;
+var toggleArmCursorTrack = CC.PAD09;
+var toggleSoloCursorTrack = CC.PAD10;
+var toggleMuteCursorTrack = CC.PAD11;
+
+// PC & PB 1 - Preset Navigation
 var previousPreset = PC.PAD06;
 var nextPreset = PC.PAD02;
 var previousPresetCategory = PC.PAD07;
 var nextPresetCategory = PC.PAD03;
 var previousPresetCreator = PC.PAD08;
 var nextPresetCreator = PC.PAD04;
-var toggleSoloCursorTrack = PC.PAD01;
-var toggleArmCursorTrack = PC.PAD05;
+
+// PC & PB 2 - GUI Navigation
+var note = PC.PAD09;
+var automation = PC.PAD10;
+var mixer = PC.PAD11;
+var device = PC.PAD12;
+var perspective = PC.PAD13;
+var zoomIn = PC.PAD14;
+var zoomOut = PC.PAD15;
+var browser = PC.PAD16;
+
 
 var isMapMacroPressed = false;
 var padShift = 0;
 
+
 var isSoloOn = false;
+var soloHasChanged = true;
 var isArmOn = false;
+var armHasChanged = true;
+var isMuteOn = false;
+var muteHasChanged = true;
 var presetName = "";
+var presetHasChanged = true;
 var presetCategory = "";
+var categoryHasChanged = true;
 var presetCreator = "";
+var creatorHasChanged = true;
 var deviceName = "";
+var deviceHasChanged = true;
 var trackName = "";
+var trackHasChanged = true;
+
+//var valueChanged = false;
+var showParameter = "";
+
+var padTranslation = initArray(0, 128);
+
+
+function setNoteTable(table, offset) {
+  for (var i = 0; i < 128; i++)
+	{
+		table[i] = offset + i;
+		if (table[i] < 0 || table[i] > 127) {
+			table[i] = -1;
+		}
+	}
+	MPKminiPads.setKeyTranslationTable(padTranslation);
+}
 
 
 function init()
@@ -101,9 +143,11 @@ function init()
 	host.getMidiInPort(0).setMidiCallback(onMidi);
 	MPKminiKeys = host.getMidiInPort(0).createNoteInput("MPKmini Keys", "?0????");
 	MPKminiPads = host.getMidiInPort(0).createNoteInput("MPKmini Pads", "?9????");
-	
+
 	MPKminiKeys.setShouldConsumeEvents(false);
 	MPKminiPads.setShouldConsumeEvents(false);
+
+	setNoteTable(padTranslation, 0);
 
 	// /////////////////////////////////////////////// host sections
 
@@ -111,35 +155,46 @@ function init()
 	transport = host.createTransport();
 	cursorTrack = host.createCursorTrack(2, 0);
 	cursorDevice = cursorTrack.getPrimaryDevice();
+
 	cursorTrack.getSolo().addValueObserver(function(on)
 	{
-		//sendNoteOn(9, 40, on ? 1 : 0);
-		//sendMidi(201, 0, on ? 1 : 0);
 		isSoloOn = on;
+		soloHasChanged = true;
 	});
 	cursorTrack.getArm().addValueObserver(function(on)
 	{
-		isArmOn = !on;
+		isArmOn = on;
+		armHasChanged = true;
+	});
+	cursorTrack.getMute().addValueObserver(function(on)
+	{
+		isMuteOn = on;
+		muteHasChanged = true;
 	});
 	cursorDevice.addPresetNameObserver(50, "None", function(on)
 	{
 		presetName = on;
+		presetHasChanged = true;
 	});
 	cursorDevice.addPresetCategoryObserver(50, "None", function(on)
 	{
 		presetCategory = on;
+		categoryHasChanged = true;
 	});
 	cursorDevice.addPresetCreatorObserver(50, "None", function(on)
 	{
 		presetCreator = on;
+		creatorHasChanged = true;
 	});
 	cursorDevice.addNameObserver(50, "None", function(on)
 	{
 		deviceName = on;
+		deviceHasChanged = true;
 	});
 	cursorTrack.addNameObserver(50, "None", function(on)
 	{
 		trackName = on;
+		trackHasChanged = true;
 	});
 
 
@@ -161,10 +216,6 @@ function init()
 	sendNoteOn(9, 51, 1);
 }
 
-function exit()
-{
-}
-
 function onMidi(status, data1, data2)
 {
 	var msg = data1;
@@ -177,17 +228,13 @@ function onMidi(status, data1, data2)
 	var lowerKnobs = msg - CC.K1 + 4;
 	var upperKnobs = msg - CC.K1 - 4;
 
-//	printMidi(status, msg, val);
+	printMidi(status, msg, val);
 
 	if (status == CHANNEL10 && msg == mapMacro) isMapMacroPressed = val > 0;
 
 	if (status == CHANNEL0 && msg >= CC.K1 && msg < CC.K1 + 4)
 	{
 		isMapMacroPressed ? val == 127 ? cursorDevice.getMacro(msg - CC.K1 + 4).getModulationSource().toggleIsMapping() : getEncoderTarget("lower", lowerKnobs, val) : getEncoderTarget("lower", lowerKnobs, val);
-	}
-	if (status == NOTE10 && msg >= 36 && msg <= 51)
-	{
-		//cursorTrack.playNote(msg + padShift, val);
 	}
 	else if (status == CHANNEL0 && msg >= CC.K5 && msg < CC.K5 + 4)
 	{
@@ -197,86 +244,44 @@ function onMidi(status, data1, data2)
 	{
 		switch (msg)
 		{
-			case toggleArmCursorTrack:
-				cursorTrack.getArm().toggle();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Arm " + (isArmOn ? "On" : "Off"));
-				break;
-			case toggleSoloCursorTrack:
-				cursorTrack.getSolo().toggle();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Solo " + (isSoloOn ? "On" : "Off"));
-				break;
+			// PC & PB 1
 			case previousPreset:
 				cursorDevice.switchToPreviousPreset();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Preset: " + presetName);
+				showParameter = "preset";
 				break;
 			case nextPreset:
 				cursorDevice.switchToNextPreset();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Preset: " + presetName);
+				showParameter = "preset";
 				break;
 			case previousPresetCategory:
 				cursorDevice.switchToPreviousPresetCategory();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Category: " + presetCategory);
+				showParameter = "category";
 				break;
 			case nextPresetCategory:
 				cursorDevice.switchToNextPresetCategory();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Category: " + presetCategory);
+				showParameter = "category";
 				break;
 			case previousPresetCreator:
 				cursorDevice.switchToPreviousPresetCreator();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Creator: " + presetCreator);
+				showParameter = "creator";
 				break;
 			case nextPresetCreator:
 				cursorDevice.switchToNextPresetCreator();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Creator: " + presetCreator);
+				showParameter = "creator";
 				break;
-			case toggleArmCursorTrack + 8:
-				cursorTrack.getArm().toggle();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Arm " + (isArmOn ? "On" : "Off"));
+
+			// PC & PB 2
+			case perspective:
+				application.nextPerspective();
 				break;
-			case toggleSoloCursorTrack + 8:
-				cursorTrack.getSolo().toggle();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Solo " + (isSoloOn ? "On" : "Off"));
+			case zoomIn:
+				application.zoomIn();
 				break;
-			case previousPreset + 8:
-				cursorDevice.switchToPreviousPreset();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Preset: " + presetName);
+			case zoomOut:
+				application.zoomOut();
 				break;
-			case nextPreset + 8:
-				cursorDevice.switchToNextPreset();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Preset: " + presetName);
-				break;
-			case previousPresetCategory + 8:
-				cursorDevice.switchToPreviousPresetCategory();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Category: " + presetCategory);
-				break;
-			case nextPresetCategory + 8:
-				cursorDevice.switchToNextPresetCategory();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Category: " + presetCategory);
-				break;
-			case previousPresetCreator + 8:
-				cursorDevice.switchToPreviousPresetCreator();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Creator: " + presetCreator);
-				break;
-			case nextPresetCreator + 8:
-				cursorDevice.switchToNextPresetCreator();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Creator: " + presetCreator);
-				break;
-		}
-	}
-	else if (status == CHANNEL10 && val > 0) // do sth when button is pressed, ignore button release
-	{
-		switch (msg)
-		{
-			case mapMacro:
-				break;
-			case stop:
-				// transport.stop();
-				break;
-			case rec:
-				// transport.record();
-				break;
-			case od:
-				// transport.toggleOverdub();
+			case browser:
+				application.toggleBrowserVisibility();
 				break;
 			case note:
 				application.toggleNoteEditor();
@@ -290,34 +295,91 @@ function onMidi(status, data1, data2)
 			case device:
 				application.toggleDevices();
 				break;
+
+
+		}
+	}
+	else if (status == CHANNEL10 && val > 0) // do sth when button is pressed, ignore button release
+	{
+		switch (msg)
+		{
+			// CC & PB 1
+			case devPageUp:
+				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.PREVIOUS);
+				showParameter = "device";
+				break;
+			case devPageDown:
+				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.NEXT);
+				showParameter = "device";
+				break;
+			case cursorTrackUp:
+				cursorTrack.selectPrevious();
+				showParameter = "track";
+				break;
+			case cursorTrackDown:
+				cursorTrack.selectNext();
+				showParameter = "track";
+				break;
 			case shiftPadsUp:
 				if (padShift < 88)
 				{
 					padShift += 8;
-					if(VISUAL_FEEDBACK) host.showPopupNotification("Pads Shifted: " + padShift);
+					setNoteTable(padTranslation, padShift);
 				}
+				valueChanged = true;
+				showParameter = "padshift";
 				break;
 			case shiftPadsDown:
 				if (padShift > -40)
 				{
 					padShift -= 8;
-					if(VISUAL_FEEDBACK) host.showPopupNotification("Pads Shifted: " + padShift);
+					setNoteTable(padTranslation, padShift);
 				}
+				valueChanged = true;
+				showParameter = "padshift";
 				break;
-			case devPageUp:
-				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.PREVIOUS);
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Device: " + deviceName);
+			case mapMacro:
 				break;
-			case devPageDown:
-				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.NEXT);
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Device: " + deviceName);
+
+			// CC & PB 2
+			case stop:
+				transport.stop();
 				break;
-			case cursorTrackUp:
-				cursorTrack.selectPrevious();
-				if(VISUAL_FEEDBACK) host.showPopupNotification("Track: " + trackName);
+			case play:
+				transport.play();
 				break;
-			case cursorTrackDown:
-				cursorTrack.selectNext();
+			case rec:
+				transport.record();
+				break;
+			case od:
+				transport.toggleOverdub();
+				break;
+			case toggleArmCursorTrack:
+				cursorTrack.getArm().toggle();
+				showParameter = "arm";
+				break;
+			case toggleSoloCursorTrack:
+				cursorTrack.getSolo().toggle();
+				showParameter = "solo";
+				break;
+			case toggleMuteCursorTrack:
+				cursorTrack.getMute().toggle();
+				showParameter = "mute";
+				break;
+		}
+	}
+	else if (status == CHANNEL10 && val == 0) // do sth when button released
+	{
+		switch (msg)
+		{
+			case toggleArmCursorTrack:
+				armHasChanged = true;
+				break;
+			case toggleSoloCursorTrack:
+				soloHasChanged = true;
+				break;
+			case toggleMuteCursorTrack:
+				muteHasChanged = true;
 				break;
 		}
 	}
@@ -326,9 +388,87 @@ function onSysex(data)
 {
 	// printSysex(data);
 }
+
+function flush()
+{
+	if (VISUAL_FEEDBACK && showParameter)
+	{
+
+		switch (showParameter) {
+			case "track":
+				if (trackHasChanged) {
+					showParameter = "none";
+					host.showPopupNotification("Track: " + trackName);
+					}
+				break;
+			case "device":
+				if (deviceHasChanged) {
+					showParameter = "none";
+					host.showPopupNotification("Device: " + deviceName);
+				}
+				break;
+			case "padshift":
+				if (padshiftHasChanged) {
+					showParameter = "none";
+					host.showPopupNotification("Pads Shifted: " + padShift);
+				}
+				break;
+			case "arm":
+				if (armHasChanged) {
+				host.showPopupNotification("Arm: " + (isArmOn ? "On" : "Off"));
+				}
+				break;
+			case "solo":
+				if (soloHasChanged) {
+					showParameter = "none";
+					host.showPopupNotification("Solo: " + (isSoloOn ? "On" : "Off"));
+				}
+				break;
+			case "mute":
+				if (muteHasChanged) {
+					showParameter = "none";
+					host.showPopupNotification("Mute: " + (isSoloOn ? "On" : "Off"));
+				}
+				break;
+			case "preset":
+				if (presetHasChanged) {
+					showParameter = "none";
+					host.showPopupNotification("Preset: " + presetName);
+				}
+				break;
+			case "category":
+				if (categoryHasChanged) {
+					showParameter = "none";
+					host.showPopupNotification("Category: " + presetCategory);
+				}
+				break;
+			case "creator":
+				if (creatorHasChanged) {
+					showParameter = "none";
+					host.showPopupNotification("Creator: " + presetCreator);
+				}
+				break;
+		}
+	}
+	if (armHasChanged)
+	{
+		sendMidi(185, 28, isArmOn ? 127 : 0);
+		armHasChanged = false;
+	}
+	if (soloHasChanged)
+	{
+		sendMidi(185, 29, isSoloOn ? 127 : 0);
+		soloHasChanged = false;
+	}
+	if (muteHasChanged)
+	{
+		sendMidi(185, 30, isMuteOn ? 127 : 0);
+		muteHasChanged = false;
+	}
+}
+
 function getEncoderTarget(row, knob, val)
 {
-
 	if (row == "lower")
 	{
 		return cursorDevice.getMacro(knob).getAmount().set(val, 128);
@@ -339,10 +479,13 @@ function getEncoderTarget(row, knob, val)
 	}
 }
 function getObserverIndexFunc(index, f)
-
 {
 	return function(value)
 	{
 		f(index, value);
 	};
+}
+
+function exit()
+{
 }
