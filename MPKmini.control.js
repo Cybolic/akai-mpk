@@ -105,27 +105,27 @@ var padshiftHasChanged = true;
 
 
 var isRecordOn = false;
-var recordHasChanged = true;
+var recordHasChanged = false;
 var isPlayOn = false;
-var playHasChanged = true;
+var playHasChanged = false;
 var isOverdubOn = false;
-var overdubHasChanged = true;
+var overdubHasChanged = false;
 var isSoloOn = false;
-var soloHasChanged = true;
+var soloHasChanged = false;
 var isArmOn = false;
-var armHasChanged = true;
+var armHasChanged = false;
 var isMuteOn = false;
-var muteHasChanged = true;
+var muteHasChanged = false;
 var presetName = "";
-var presetHasChanged = true;
+var presetHasChanged = false;
 var presetCategory = "";
-var categoryHasChanged = true;
+var categoryHasChanged = false;
 var presetCreator = "";
-var creatorHasChanged = true;
+var creatorHasChanged = false;
 var deviceName = "";
-var deviceHasChanged = true;
+var deviceHasChanged = false;
 var trackName = "";
-var trackHasChanged = true;
+var trackHasChanged = false;
 
 //var valueChanged = false;
 var showParameter = "";
@@ -160,7 +160,7 @@ function init()
 
 	application = host.createApplication();
 	transport = host.createTransport();
-	cursorTrack = host.createCursorTrack(2, 0);
+	cursorTrack = host.createCursorTrack(0, 0);
 	cursorDevice = cursorTrack.getPrimaryDevice();
 
 	cursorTrack.getSolo().addValueObserver(function(on)
@@ -200,27 +200,42 @@ function init()
 	cursorDevice.addPresetNameObserver(50, "None", function(on)
 	{
 		presetName = on;
-		presetHasChanged = true;
+		if (presetHasChanged) {
+			showParameter = "preset";
+			presetHasChanged = false;
+		}
 	});
 	cursorDevice.addPresetCategoryObserver(50, "None", function(on)
 	{
 		presetCategory = on;
-		categoryHasChanged = true;
+		if (categoryHasChanged) {
+			showParameter = "category";
+			categoryHasChanged = false;
+		}
 	});
 	cursorDevice.addPresetCreatorObserver(50, "None", function(on)
 	{
 		presetCreator = on;
-		creatorHasChanged = true;
+		if (creatorHasChanged) {
+			showParameter = "creator";
+			creatorHasChanged = false;
+		}
 	});
 	cursorDevice.addNameObserver(50, "None", function(on)
 	{
 		deviceName = on;
-		deviceHasChanged = true;
+		if (deviceHasChanged) {
+			showParameter = "device";
+			deviceHasChanged = false;
+		}
 	});
 	cursorTrack.addNameObserver(50, "None", function(on)
 	{
 		trackName = on;
-		trackHasChanged = true;
+		if (trackHasChanged) {
+			showParameter = "track";
+			trackHasChanged = false;
+		}
 	});
 
 
@@ -257,7 +272,8 @@ function onMidi(status, msg, val)
 	if (status == CHANNEL10 && msg == mapMacro)
 	{
 		isMapMacroPressed = val > 0;
-		if(isMapMacroPressed) host.showPopupNotification("MapMacro (Turn knob fully clockwise...)");
+		if(isMapMacroPressed) host.showPopupNotification("MapMacro: On");
+		else host.showPopupNotification("MapMacro: Off");
 	}
 
 	if (status == CHANNEL0 && msg >= CC.K1 && msg < CC.K1 + 4)
@@ -275,27 +291,27 @@ function onMidi(status, msg, val)
 			// PC & PB 1
 			case previousPreset:
 				cursorDevice.switchToPreviousPreset();
-				showParameter = "preset";
+				presetHasChanged = true;
 				break;
 			case nextPreset:
 				cursorDevice.switchToNextPreset();
-				showParameter = "preset";
+				presetHasChanged = true;
 				break;
 			case previousPresetCategory:
 				cursorDevice.switchToPreviousPresetCategory();
-				showParameter = "category";
+				categoryHasChanged = true;
 				break;
 			case nextPresetCategory:
 				cursorDevice.switchToNextPresetCategory();
-				showParameter = "category";
+				categoryHasChanged = true;
 				break;
 			case previousPresetCreator:
 				cursorDevice.switchToPreviousPresetCreator();
-				showParameter = "creator";
+				creatorHasChanged = true;
 				break;
 			case nextPresetCreator:
 				cursorDevice.switchToNextPresetCreator();
-				showParameter = "creator";
+				creatorHasChanged = true;
 				break;
 
 			// PC & PB 2
@@ -334,19 +350,19 @@ function onMidi(status, msg, val)
 			// CC & PB 1
 			case devPageUp:
 				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.PREVIOUS);
-				showParameter = "device";
+				deviceHasChanged = true;
 				break;
 			case devPageDown:
 				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.NEXT);
-				showParameter = "device";
+				deviceHasChanged = true;
 				break;
 			case cursorTrackUp:
 				cursorTrack.selectPrevious();
-				showParameter = "track";
+				trackHasChanged = true;
 				break;
 			case cursorTrackDown:
 				cursorTrack.selectNext();
-				showParameter = "track";
+				trackHasChanged = true;
 				break;
 			case shiftPadsUp:
 				if (padShift < 88)
@@ -434,16 +450,12 @@ function flush()
 
 		switch (showParameter) {
 			case "track":
-				if (trackHasChanged) {
 					showParameter = "none";
 					host.showPopupNotification("Track: " + trackName);
-					}
 				break;
 			case "device":
-				if (deviceHasChanged) {
 					showParameter = "none";
 					host.showPopupNotification("Device: " + deviceName);
-				}
 				break;
 			case "padshift":
 				if (padshiftHasChanged) {
@@ -469,22 +481,16 @@ function flush()
 				}
 				break;
 			case "preset":
-				if (presetHasChanged) {
 					showParameter = "none";
 					host.showPopupNotification("Preset: " + presetName);
-				}
 				break;
 			case "category":
-				if (categoryHasChanged) {
 					showParameter = "none";
 					host.showPopupNotification("Category: " + presetCategory);
-				}
 				break;
 			case "creator":
-				if (creatorHasChanged) {
 					showParameter = "none";
 					host.showPopupNotification("Creator: " + presetCreator);
-				}
 				break;
 		}
 	}
