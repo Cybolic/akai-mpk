@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////
-////        encoders can send nrpn, but it's broken. on fast movements, an encoder sends less data, 
+////        encoders can send nrpn, but it's broken. on fast movements, an encoder sends less data,
 ////        which means, much less and delayed change of parameter values in the app.
 ////        only works like expected when moving encoders very slowly
 ////        -> check nrpn behaviour on apc40
@@ -71,8 +71,11 @@ function init()
 {
 	host.getMidiInPort(0).setMidiCallback(onMidi);
 	host.getMidiInPort(0).setSysexCallback(onSysex);
-	host.getMidiInPort(0).createNoteInput("MPK25 Keys", "80????", "90????", "B001??", "B040??", "D0????", "E0????");
-	host.getMidiInPort(0).createNoteInput("MPK25 Pads", "81????", "91????", "D1????", "E1????");
+	MPK25Keys = host.getMidiInPort(0).createNoteInput("MPK25 Keys", "?0????");
+	MPK25Pads = host.getMidiInPort(0).createNoteInput("MPK25 Pads", "?1????");
+
+	MPK25Keys.setShouldConsumeEvents(false);
+	MPK25Pads.setShouldConsumeEvents(false);
 
 	// /////////////////////////////////////////////////// sections
 	transport = host.createTransportSection();
