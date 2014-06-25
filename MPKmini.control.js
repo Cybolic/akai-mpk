@@ -12,15 +12,13 @@ host.addDeviceNameBasedDiscoveryPair(["MPK mini"], ["MPK mini"]);
   // Set default
 var VISUAL_FEEDBACK = true;
 
-  // Check if a config file is available, if yes, use the values there instead:
-try {
-	load("MPKmini.config.js");
-} catch(e) {
-	//Nothing to do here
-}
-
 // End Config
 
+var CHANNEL0 = 176;
+var CHANNEL10 = 185;
+var PROGCHANGE = 201;
+
+// List of CCs and PCs of the Pads:
 var CC =
 {
 	K1 : 13,
@@ -69,7 +67,8 @@ var devPageUp = CC.PAD06;
 var devPageDown = CC.PAD02;
 var shiftPadsUp = CC.PAD07;
 var shiftPadsDown = CC.PAD03;
-var mapMacro = CC.PAD08;
+var toggleMacro = CC.PAD08;
+var nextMap = CC.PAD04;
 
 // CC & PB 2 - Transport and Track
 var stop = CC.PAD13;
@@ -81,24 +80,26 @@ var toggleSoloCursorTrack = CC.PAD10;
 var toggleMuteCursorTrack = CC.PAD11;
 
 // PC & PB 1 - Preset Navigation
-var previousPreset = PC.PAD06;
-var nextPreset = PC.PAD02;
-var previousPresetCategory = PC.PAD07;
-var nextPresetCategory = PC.PAD03;
-var previousPresetCreator = PC.PAD08;
-var nextPresetCreator = PC.PAD04;
+var previousPreset = PC.PAD05;
+var nextPreset = PC.PAD01;
+var previousPresetCategory = PC.PAD06;
+var nextPresetCategory = PC.PAD02;
+var previousPresetCreator = PC.PAD07;
+var nextPresetCreator = PC.PAD03;
+var toggleMacro2 = PC.PAD08;
+var nextMap2 = PC.PAD04;
 
 // PC & PB 2 - GUI Navigation
 var note = PC.PAD09;
 var automation = PC.PAD10;
 var mixer = PC.PAD11;
 var device = PC.PAD12;
-var perspective = PC.PAD13;
-var zoomIn = PC.PAD14;
-var zoomOut = PC.PAD15;
+var inspector = PC.PAD13;
+var perspective = PC.PAD14;
+var project = PC.PAD15;
 var browser = PC.PAD16;
 
-
+// State and Value Variables
 var isMapMacroPressed = false;
 var padShift = 0;
 var padshiftHasChanged = true;
@@ -126,8 +127,15 @@ var deviceName = "";
 var deviceHasChanged = false;
 var trackName = "";
 var trackHasChanged = false;
+var isMacroOn = true;
+var macroHasChanged = false;
+var macro = [];
+var param = [];
+//var	nextParameterPageEnabled = true;
+//var	prevParameterPageEnabled = true;
+var paraPage = 0;
+var paraPageOld = 42;
 
-//var valueChanged = false;
 var showParameter = "";
 
 var padTranslation = initArray(0, 128);
@@ -142,11 +150,49 @@ function setNoteTable(table, offset) {
 		}
 	}
 	MPKminiPads.setKeyTranslationTable(padTranslation);
+	padTrans.set(Math.round(offset/8), 1);
 }
 
 
 function init()
 {
+	// Create Preferences, DocState and Visual Notifications:
+	docState = host.getDocumentState();
+	prefs = host.getPreferences();
+	notif = host.getNotificationSettings();
+
+	notif.setShouldShowChannelSelectionNotifications(true);
+	notif.setShouldShowDeviceLayerSelectionNotifications(true);
+	notif.setShouldShowDeviceSelectionNotifications(true);
+	notif.setShouldShowMappingNotifications(true);
+	notif.setShouldShowPresetNotifications(true);
+	notif.setShouldShowSelectionNotifications(true);
+	notif.setShouldShowTrackSelectionNotifications(true);
+	notif.setShouldShowValueNotifications(true);
+
+	// Seupt the Pref and docState Controls:
+	padTrans = docState.getNumberSetting("Pad Transpose", "Settings", -5, 5, 1, "Bank Steps", 0);
+	padTrans.addValueObserver(1, function(value){
+		//println(value);
+		if (Math.round(value*8) != padShift) {
+			padShift = Math.round(value*8);
+			setNoteTable(padTranslation, padShift);
+		}
+	});
+	knobModeEnum = ["Macros", "Device Map"];
+	knobMode = docState.getEnumSetting("Knobs", "Settings", knobModeEnum, "Macros");
+	knobMode.addValueObserver(function(value){
+		//println(value);
+	});
+
+	visualCuesEnum = ["On", "Off"];
+	visualCues = docState.getEnumSetting("Additional Visual Cues", "Settings", visualCuesEnum, "On");
+	visualCues.addValueObserver(function(value){
+		value === "On" ? VISUAL_FEEDBACK = true : VISUAL_FEEDBACK = false;
+		//println(value);
+	});
+
+	// Set up Midi Inputs
 	host.getMidiInPort(0).setMidiCallback(onMidi);
 	MPKminiKeys = host.getMidiInPort(0).createNoteInput("MPKmini Keys", "?0????");
 	MPKminiPads = host.getMidiInPort(0).createNoteInput("MPKmini Pads", "?9????");
@@ -156,12 +202,22 @@ function init()
 
 	setNoteTable(padTranslation, 0);
 
-	// /////////////////////////////////////////////// host sections
+	// Setup Views and Callbacks:
 
 	application = host.createApplication();
 	transport = host.createTransport();
-	cursorTrack = host.createCursorTrack(0, 0);
-	cursorDevice = cursorTrack.getPrimaryDevice();
+	//cursorTrack = host.createCursorTrack(0, 0);
+	cursorTrack = host.createEditorTrackSelection(true,0, 8);
+	//cursorDevice = cursorTrack.getPrimaryDevice();
+	cursorDevice = cursorTrack.createEditorDeviceSelection(true);
+
+	//cursorTrack.addNoteObserver(function(on, key, velo){
+	//	println(key);
+	//});
+	//
+	//cursorTrack.addVuMeterObserver(129, 1, true, function(value){
+	//	println(value);
+	//});
 
 	cursorTrack.getSolo().addValueObserver(function(on)
 	{
@@ -170,6 +226,7 @@ function init()
 	});
 	cursorTrack.getArm().addValueObserver(function(on)
 	{
+		println(on);
 		isArmOn = on;
 		armHasChanged = true;
 	});
@@ -182,13 +239,13 @@ function init()
 	transport.addIsPlayingObserver(function(on)
 	{
 		isPlayingOn = on;
-		println(on);
+		//println(on);
 		playHasChanged = true;
 	});
 	transport.addIsRecordingObserver(function(on)
 	{
 		isRecordOn = on;
-		println(on);
+		//println(on);
 		recordHasChanged = true;
 	});
 	transport.addOverdubObserver(function(on)
@@ -197,55 +254,75 @@ function init()
 		overdubHasChanged = true;
 	});
 
-	cursorDevice.addPresetNameObserver(50, "None", function(on)
-	{
-		presetName = on;
-		if (presetHasChanged) {
-			showParameter = "preset";
-			presetHasChanged = false;
-		}
-	});
-	cursorDevice.addPresetCategoryObserver(50, "None", function(on)
-	{
-		presetCategory = on;
-		if (categoryHasChanged) {
-			showParameter = "category";
-			categoryHasChanged = false;
-		}
-	});
-	cursorDevice.addPresetCreatorObserver(50, "None", function(on)
-	{
-		presetCreator = on;
-		if (creatorHasChanged) {
-			showParameter = "creator";
-			creatorHasChanged = false;
-		}
-	});
-	cursorDevice.addNameObserver(50, "None", function(on)
-	{
-		deviceName = on;
-		if (deviceHasChanged) {
-			showParameter = "device";
-			deviceHasChanged = false;
-		}
-	});
-	cursorTrack.addNameObserver(50, "None", function(on)
-	{
-		trackName = on;
-		if (trackHasChanged) {
-			showParameter = "track";
-			trackHasChanged = false;
-		}
-	});
+	//cursorDevice.addPresetNameObserver(50, "None", function(on)
+	//{
+	//	presetName = on;
+	//	if (presetHasChanged) {
+	//		showParameter = "preset";
+	//		presetHasChanged = false;
+	//	}
+	//});
+	//cursorDevice.addPresetCategoryObserver(50, "None", function(on)
+	//{
+	//	presetCategory = on;
+	//	if (categoryHasChanged) {
+	//		showParameter = "category";
+	//		categoryHasChanged = false;
+	//	}
+	//});
+	//cursorDevice.addPresetCreatorObserver(50, "None", function(on)
+	//{
+	//	presetCreator = on;
+	//	if (creatorHasChanged) {
+	//		showParameter = "creator";
+	//		creatorHasChanged = false;
+	//	}
+	//});
+	//cursorDevice.addNameObserver(50, "None", function(on)
+	//{
+	//	deviceName = on;
+	//	if (deviceHasChanged) {
+	//		showParameter = "device";
+	//		deviceHasChanged = false;
+	//	}
+	//});
+
+	//cursorDevice.addPageNamesObserver(function(on){
+	//})
+
+	cursorDevice.addSelectedPageObserver(0, function(on){
+		paraPage = on;
+	})
+
+	//cursorDevice.addNextParameterPageEnabledObserver(function(on){
+	//	println(on);
+	//	nextParameterPageEnabled = on;
+	//})
+	//
+	//cursorDevice.addPreviousParameterPageEnabledObserver(function(on){
+	//	println(on);
+	//	prevParameterPageEnabled = on;
+	//})
+
+	//cursorTrack.addNameObserver(50, "None", function(on)
+	//{
+	//	trackName = on;
+	//	if (trackHasChanged) {
+	//		showParameter = "track";
+	//		trackHasChanged = false;
+	//	}
+	//});
 
 
 	for ( var p = 0; p < 8; p++)
 	{
-		var macro = cursorDevice.getMacro(p);
-		macro.getAmount().setIndication(true);
+		macro[p] = cursorDevice.getMacro(p);
+		macro[p].getAmount().setIndication(isMacroOn);
+		param[p] = cursorDevice.getParameter(p);
+		param[p].setIndication(!isMacroOn);
 	}
 
-	// ////bitwig logo;)
+	// Show the Bitwig Logo on the Pads :-)
 	sendNoteOn(9, 36, 1);
 	sendNoteOn(9, 39, 1);
 	sendNoteOn(9, 41, 1);
@@ -257,11 +334,7 @@ function init()
 	sendNoteOn(9, 51, 1);
 }
 
-
-var CHANNEL0 = 176;
-var CHANNEL10 = 185;
-var PROGCHANGE = 201;
-
+// Deal with the incoming Midi:
 function onMidi(status, msg, val)
 {
 	var lowerKnobs = msg - CC.K1 + 4;
@@ -269,20 +342,13 @@ function onMidi(status, msg, val)
 
 	//printMidi(status, msg, val);
 
-	if (status == CHANNEL10 && msg == mapMacro)
-	{
-		isMapMacroPressed = val > 0;
-		if(isMapMacroPressed) host.showPopupNotification("MapMacro: On");
-		else host.showPopupNotification("MapMacro: Off");
-	}
-
 	if (status == CHANNEL0 && msg >= CC.K1 && msg < CC.K1 + 4)
 	{
-		isMapMacroPressed ? val == 127 ? cursorDevice.getMacro(msg - CC.K1 + 4).getModulationSource().toggleIsMapping() : getEncoderTarget("lower", lowerKnobs, val) : getEncoderTarget("lower", lowerKnobs, val);
+		getEncoderTarget("lower", lowerKnobs, val);
 	}
 	else if (status == CHANNEL0 && msg >= CC.K5 && msg < CC.K5 + 4)
 	{
-		isMapMacroPressed ? val == 127 ? cursorDevice.getMacro(msg - CC.K5).getModulationSource().toggleIsMapping() : getEncoderTarget("upper", upperKnobs, val) : getEncoderTarget("upper", upperKnobs, val);
+		getEncoderTarget("upper", upperKnobs, val);
 	}
 	else if (status == PROGCHANGE && msg >= PC.PAD01 && msg <= PC.PAD16)
 	{
@@ -313,16 +379,27 @@ function onMidi(status, msg, val)
 				cursorDevice.switchToNextPresetCreator();
 				creatorHasChanged = true;
 				break;
+			case toggleMacro2:
+				isMacroOn = !isMacroOn;
+				toggleKnobs();
+				macroHasChanged = true;
+				showParameter = "macro";
+				break;
+			case nextMap2:
+				if (!isMacroOn) {
+					nextParameterPageEnabled ? cursorDevice.nextParameterPage() : cursorDevice.setParameterPage(0);
+				}
+				break;
 
 			// PC & PB 2
+			case inspector:
+				application.toggleInspector();
+				break;
 			case perspective:
 				application.nextPerspective();
 				break;
-			case zoomIn:
-				application.zoomIn();
-				break;
-			case zoomOut:
-				application.zoomOut();
+			case project:
+				application.nextProject();
 				break;
 			case browser:
 				application.toggleBrowserVisibility();
@@ -349,12 +426,16 @@ function onMidi(status, msg, val)
 		{
 			// CC & PB 1
 			case devPageUp:
-				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.PREVIOUS);
+				cursorDevice.selectPrevious();
 				deviceHasChanged = true;
+				paraPage = 0;
+				paraPage = 42;
 				break;
 			case devPageDown:
-				cursorDevice.switchToDevice(DeviceType.ANY,ChainLocation.NEXT);
+				cursorDevice.selectNext();
 				deviceHasChanged = true;
+				paraPage = 0;
+				paraPage = 42;
 				break;
 			case cursorTrackUp:
 				cursorTrack.selectPrevious();
@@ -382,7 +463,24 @@ function onMidi(status, msg, val)
 				valueChanged = true;
 				showParameter = "padshift";
 				break;
-			case mapMacro:
+			case toggleMacro:
+				isMacroOn = !isMacroOn;
+				toggleKnobs();
+				macroHasChanged = true;
+				showParameter = "macro";
+				break;
+			case nextMap:
+				if (!isMacroOn) {
+					if (paraPage == paraPageOld) {
+						cursorDevice.setParameterPage(0);
+						paraPageOld = 42
+					}
+					else {
+						cursorDevice.nextParameterPage();
+						paraPageOld = paraPage;
+					}
+					//nextParameterPageEnabled ? cursorDevice.nextParameterPage() : cursorDevice.setParameterPage(0);
+				}
 				break;
 
 			// CC & PB 2
@@ -399,21 +497,24 @@ function onMidi(status, msg, val)
 				transport.toggleOverdub();
 				break;
 			case toggleArmCursorTrack:
-				cursorTrack.getArm().toggle();
+				cursorTrack.getArm().set(true);
+				//cursorTrack.getArm().toggle();
 				showParameter = "arm";
 				break;
 			case toggleSoloCursorTrack:
-				cursorTrack.getSolo().toggle();
+				//cursorTrack.getSolo().toggle();
 				showParameter = "solo";
 				break;
 			case toggleMuteCursorTrack:
-				cursorTrack.getMute().toggle();
+				//cursorTrack.getMute().toggle();
 				showParameter = "mute";
 				break;
 		}
 	}
 	else if (status == CHANNEL10 && val == 0) // do sth when button released
 	{
+		// These are workarounds for the fact that the pads overwrite their lighted state on release
+		// So we have to re-send the light on message...
 		switch (msg)
 		{
 			case toggleArmCursorTrack:
@@ -443,24 +544,25 @@ function onSysex(data)
 	// printSysex(data);
 }
 
+// Sending out Midi to the Controller
 function flush()
 {
 	if (VISUAL_FEEDBACK && showParameter)
 	{
 
 		switch (showParameter) {
-			case "track":
-					showParameter = "none";
-					host.showPopupNotification("Track: " + trackName);
-				break;
-			case "device":
-					showParameter = "none";
-					host.showPopupNotification("Device: " + deviceName);
-				break;
+			//case "track":
+			//		showParameter = "none";
+			//		host.showPopupNotification("Track: " + trackName);
+			//	break;
+			//case "device":
+			//		showParameter = "none";
+			//		host.showPopupNotification("Device: " + deviceName);
+			//	break;
 			case "padshift":
 				if (padshiftHasChanged) {
 					showParameter = "none";
-					host.showPopupNotification("Pads Shifted: " + padShift);
+					host.showPopupNotification("Pad Bank: " + padShift/8);
 				}
 				break;
 			case "arm":
@@ -480,18 +582,23 @@ function flush()
 					host.showPopupNotification("Mute: " + (isSoloOn ? "On" : "Off"));
 				}
 				break;
-			case "preset":
+			case "macro":
+				if (macroHasChanged) {
 					showParameter = "none";
-					host.showPopupNotification("Preset: " + presetName);
-				break;
-			case "category":
-					showParameter = "none";
-					host.showPopupNotification("Category: " + presetCategory);
-				break;
-			case "creator":
-					showParameter = "none";
-					host.showPopupNotification("Creator: " + presetCreator);
-				break;
+					host.showPopupNotification((isMacroOn ? "Macro Mode" : "Device Mapping Mode"));
+				}
+			//case "preset":
+			//		showParameter = "none";
+			//		host.showPopupNotification("Preset: " + presetName);
+			//	break;
+			//case "category":
+			//		showParameter = "none";
+			//		host.showPopupNotification("Category: " + presetCategory);
+			//	break;
+			//case "creator":
+			//		showParameter = "none";
+			//		host.showPopupNotification("Creator: " + presetCreator);
+				//break;
 		}
 	}
 	if (armHasChanged)
@@ -524,20 +631,29 @@ function flush()
 		sendMidi(185, 38, isOverdubOn ? 127 : 0);
 		overdubHasChanged = false;
 	}
-
 }
 
+// Function to toggle the Knobs between Macro and Device Mapping:
+function toggleKnobs () {
+	//println(isMacroOn);
+	for ( var p = 0; p < 8; p++)
+	{
+		macro[p].getAmount().setIndication(isMacroOn);
+		param[p].setIndication(!isMacroOn);
+	}
+}
+
+// Function to deal with the Knobs:
 function getEncoderTarget(row, knob, val)
 {
-	if (row == "lower")
-	{
-		return cursorDevice.getMacro(knob).getAmount().set(val, 128);
+	if (isMacroOn) {
+		return macro[knob].getAmount().set(val, 128);
 	}
-	else if (row == "upper")
-	{
-		return cursorDevice.getMacro(knob).getAmount().set(val, 128);
+	else {
+		return param[knob].set(val, 128);
 	}
 }
+
 function getObserverIndexFunc(index, f)
 {
 	return function(value)
