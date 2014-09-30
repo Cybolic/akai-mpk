@@ -171,7 +171,6 @@ function init()
 	// Setup the Pref and docState Controls:
 	padTrans = docState.getNumberSetting("Pad Transpose", "Settings", -5, 11, 1, "Bank Steps", 0);
 	padTrans.addValueObserver(1, function(value){
-      value -= 5;
 		if (value*8 != padShift) {
 			padShift = value*8;
          setNoteTable(padTranslation, padShift);
@@ -180,7 +179,6 @@ function init()
 	knobModeEnum = ["Macros", "Device Map"];
 	knobMode = docState.getEnumSetting("Knobs", "Settings", knobModeEnum, "Macros");
 	knobMode.addValueObserver(function(value){
-		println(value);
       if (value === "Macros") {
          isMacroOn = true;
       }
@@ -581,7 +579,6 @@ function flush()
 
 // Function to toggle the Knobs between Macro and Device Mapping:
 function toggleKnobs () {
-	//println(isMacroOn);
 	for ( var p = 0; p < 8; p++)
 	{
 		macro[p].getAmount().setIndication(isMacroOn);
