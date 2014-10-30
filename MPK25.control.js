@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////
-////        encoders can send nrpn, but it's broken. on fast movements, an encoder sends less data, 
+////        encoders can send nrpn, but it's broken. on fast movements, an encoder sends less data,
 ////        which means, much less and delayed change of parameter values in the app.
 ////        only works like expected when moving encoders very slowly
 ////        -> check nrpn behaviour on apc40
@@ -71,17 +71,29 @@ function init()
 {
 	host.getMidiInPort(0).setMidiCallback(onMidi);
 	host.getMidiInPort(0).setSysexCallback(onSysex);
-	host.getMidiInPort(0).createNoteInput("MPK25 Keys", "80????", "90????", "B001??", "B040??", "D0????", "E0????");
-	host.getMidiInPort(0).createNoteInput("MPK25 Pads", "81????", "91????", "D1????", "E1????");
+   host.getMidiOutPort(0).setShouldSendMidiBeatClock(true);
+	MPK25Keys = host.getMidiInPort(0).createNoteInput("Keys", "?0????");
+	MPK25Pads = host.getMidiInPort(0).createNoteInput("Pads", "?1????");
+
+	MPK25Keys.setShouldConsumeEvents(false);
+	MPK25Pads.setShouldConsumeEvents(false);
+
+   // Notifications:
+   host.getNotificationSettings().setShouldShowSelectionNotifications(true);
+   host.getNotificationSettings().setShouldShowChannelSelectionNotifications(true);
+   host.getNotificationSettings().setShouldShowTrackSelectionNotifications(true);
+   host.getNotificationSettings().setShouldShowDeviceSelectionNotifications(true);
+   host.getNotificationSettings().setShouldShowDeviceLayerSelectionNotifications(true);
+   host.getNotificationSettings().setShouldShowPresetNotifications(true);
+   host.getNotificationSettings().setShouldShowMappingNotifications(true);
+   host.getNotificationSettings().setShouldShowValueNotifications(true);
 
 	// /////////////////////////////////////////////////// sections
-	transport = host.createTransportSection();
-	application = host.createApplicationSection();
-	trackBank = host.createTrackBankSection(8, 2, 0);
-	cursorTrack = host.createCursorTrackSection(2, 0);
-	cursorDevice = host.createCursorDeviceSection(8);
-
-	primaryInstrument = cursorTrack.getPrimaryInstrument();
+	transport = host.createTransport();
+	application = host.createApplication();
+	//trackBank = host.createTrackBank(8, 2, 0);
+	cursorTrack = host.createCursorTrack(2, 0);
+	cursorDevice = cursorTrack.getPrimaryDevice();
 
 	transport.addIsPlayingObserver(function(on)
 	{
@@ -90,41 +102,35 @@ function init()
 
 	for ( var p = 0; p < 8; p++)
 	{
-		var macro = primaryInstrument.getMacro(p).getAmount();
-		var parameter = cursorDevice.getParameter(p);
-		macro.setIndication(true);
-		parameter.setIndication(true);
-		parameter.setLabel("P" + (p + 1));
+		cursorDevice.getMacro(p).getAmount().setIndication(true);
+		cursorDevice.getParameter(p).setIndication(true);
+      cursorDevice.getParameter(p).setLabel("P" + (p + 1));
 	}
 }
-function exit()
-{
-}
+
 
 function onMidi(status, data1, data2)
 {
-	var cc = data1;
-	var val = data2;
-	var pressed = val > 0; // ignore button release
+	var pressed = data2 > 64; // ignore button release
 
-	// printMidi(status, cc, val);
+	 //printMidi(status, data1, data2);
 
 	// /////////////////////////// NRPN behavior is crap. on fast movements an encoder sends less data, which means, much less and delayed change of parameter values in the app. only works like expected when moving encoders very slowly.
 
 	// var relativeRange = isShift ? 200 : 96;
 
-	// if (cc == NRPN.NRPN_LSB && val != 127 && val != encoderId)
+	// if (data1 == NRPN.NRPN_LSB && data2 != 127 && data2 != encoderId)
 	// {
-	// encoderId = val;
+	// encoderId = data2;
 	// }
 	//
-	// if (cc == NRPN.DATA_INC)
+	// if (data1 == NRPN.DATA_INC)
 	// {
 	// var delta = 1;
 	//
 	// if (encoderId >= NRPN.K5A && encoderId < NRPN.K5A + 8)
 	// {
-	// primaryInstrument.getMacro(encoderId - NRPN.K5A).getAmount().inc(delta, relativeRange);
+	// cursorDevice.getMacro(encoderId - NRPN.K5A).getAmount().inc(delta, relativeRange);
 	// }
 	// if (encoderId >= NRPN.K5B && encoderId < NRPN.K5B + 8)
 	// {
@@ -161,12 +167,12 @@ function onMidi(status, data1, data2)
 	//
 	// }
 	//
-	// if (cc == NRPN.DATA_DEC)
+	// if (data1 == NRPN.DATA_DEC)
 	// {
 	// var delta = -1;
 	// if (encoderId >= NRPN.K5A && encoderId < NRPN.K5A + 8)
 	// {
-	// primaryInstrument.getMacro(encoderId - NRPN.K5A).getAmount().inc(delta, relativeRange);
+	// cursorDevice.getMacro(encoderId - NRPN.K5A).getAmount().inc(delta, relativeRange);
 	// }
 	// if (encoderId >= NRPN.K5B && encoderId < NRPN.K5B + 8)
 	// {
@@ -202,90 +208,98 @@ function onMidi(status, data1, data2)
 	//
 	// }/////////////////////////////////// end of nrpn crap ////////////////////////////////////////////////////
 
-	if (cc >= CC.K5A && cc < CC.K5A + 8)
-	{
-		primaryInstrument.getMacro(cc - CC.K5A).getAmount().set(val, 128);
-	}
-	if (cc >= CC.K5B && cc < CC.K5B + 8)
-	{
-		cursorDevice.getParameter(cc - CC.K5B).set(val, 128);
-	}
-	switch (cc)
-	{
-		case CC.K1A:
-			cursorTrack.getVolume().set(val, 128);
-			break;
-		case CC.K2A:
-			cursorTrack.getPan().set(val, 128);
-			break;
-		case CC.K3A:
-			cursorTrack.getSend(0).set(val, 128);
-			break;
-		case CC.K4A:
-			cursorTrack.getSend(1).set(val, 128);
-			break;
-		case CC.K1B:
-			cursorTrack.getVolume().set(val, 128);
-			break;
-		case CC.K2B:
-			cursorTrack.getPan().set(val, 128);
-			break;
-		case CC.K3B:
-			cursorTrack.getSend(0).set(val, 128);
-			break;
-		case CC.K4B:
-			cursorTrack.getSend(1).set(val, 128);
-			break;
-		case CC.S1A:
-			isShift = val > 0;
-			break;
-		case CC.S1B:
-			isShift = val > 0;
-			break;
-	}
+   if (isChannelController(status)) {
 
-	if (pressed)
-	{
-		switch (cc)
-		{
-			case CC.PLAY:
-				isShift ? transport.returnToArrangerment() : transport.play();
-				break;
-			case CC.STOP:
-				isShift ? transport.resetAutomationOverrides() : transport.stop();
-				break;
-			case CC.REC:
-				isShift ? cursorTrack.getArm().toggle() : transport.record();
-				break;
-			case CC.REW:
-				isShift ? cursorTrack.selectPrevious() : transport.rewind();
-				break;
-			case CC.FF:
-				isShift ? cursorTrack.selectNext() : transport.fastForward();
-				break;
-			case CC.S2A:
-				isShift ? cursorDevice.switchToPreviousPreset() : cursorDevice.switchToNextPreset();
-				break;
-			case CC.S3A:
-				isShift ? cursorDevice.switchToPreviousPresetCategory() : cursorDevice.switchToNextPresetCategory();
-				break;
-			case CC.S4A:
-				isShift ? cursorDevice.switchToPreviousPresetCreator() : cursorDevice.switchToNextPresetCreator();
-				break;
-			case CC.S2B:
-				isShift ? cursorDevice.previousParameterPage() : cursorDevice.nextParameterPage();
-				break;
-			case CC.S3B:
-				isShift ? cursorDevice.selectPrevious() : cursorDevice.selectNext();
-				break;
-			case CC.S4B:
-				isShift ? cursorTrack.getMute().toggle() : cursorTrack.getSolo().toggle();
-				break;
-		}
-	}
+      if (data1 >= CC.K5A && data1 < CC.K5A + 8)
+      {
+         cursorDevice.getMacro(data1 - CC.K5A).getAmount().set(data2, 128);
+      }
+      if (data1 >= CC.K5B && data1 < CC.K5B + 8)
+      {
+         cursorDevice.getParameter(data1 - CC.K5B).set(data2, 128);
+      }
+      switch (data1)
+      {
+         case CC.K1A:
+            cursorTrack.getVolume().set(data2, 128);
+            break;
+         case CC.K2A:
+            cursorTrack.getPan().set(data2, 127);
+            break;
+         case CC.K3A:
+            cursorTrack.getSend(0).set(data2, 128);
+            break;
+         case CC.K4A:
+            cursorTrack.getSend(1).set(data2, 128);
+            break;
+         case CC.K1B:
+            cursorTrack.getVolume().set(data2, 128);
+            break;
+         case CC.K2B:
+            cursorTrack.getPan().set(data2, 128);
+            break;
+         case CC.K3B:
+            cursorTrack.getSend(0).set(data2, 128);
+            break;
+         case CC.K4B:
+            cursorTrack.getSend(1).set(data2, 128);
+            break;
+         case CC.S1A:
+            isShift = data2 > 64;
+            break;
+         case CC.S1B:
+            isShift = data2 > 64;
+            break;
+      }
+
+      if (pressed)
+      {
+         switch (data1)
+         {
+            case CC.PLAY:
+               isShift ? transport.returnToArrangement() : transport.play();
+               break;
+            case CC.STOP:
+               isShift ? transport.resetAutomationOverrides() : transport.stop();
+               break;
+            case CC.REC:
+               isShift ? cursorTrack.getArm().toggle() : transport.record();
+               break;
+            case CC.REW:
+               isShift ? cursorTrack.selectPrevious() : transport.rewind();
+               break;
+            case CC.FF:
+               isShift ? cursorTrack.selectNext() : transport.fastForward();
+               break;
+            case CC.S2A:
+               isShift ? cursorDevice.switchToPreviousPreset() : cursorDevice.switchToNextPreset();
+               break;
+            case CC.S3A:
+               isShift ? cursorDevice.switchToPreviousPresetCategory() : cursorDevice.switchToNextPresetCategory();
+               break;
+            case CC.S4A:
+               isShift ? cursorDevice.switchToPreviousPresetCreator() : cursorDevice.switchToNextPresetCreator();
+               break;
+            case CC.S2B:
+               isShift ? cursorDevice.previousParameterPage() : cursorDevice.nextParameterPage();
+               break;
+            case CC.S3B:
+               isShift ? cursorDevice.selectPrevious() : cursorDevice.selectNext();
+               break;
+            case CC.S4B:
+               isShift ? cursorTrack.getMute().toggle() : cursorTrack.getSolo().toggle();
+               break;
+         }
+      }
+   }
 }
 
 function onSysex(data)
 {
 	// printSysex(data);
+}
+
+function exit()
+{
+
 }
