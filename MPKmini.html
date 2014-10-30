@@ -24,6 +24,10 @@
 <div id="illustration">
     <img src="MPKMini.png" width="602" height="380" alt="MPKMini" border="0"/>
 </div>
+    <div id="illustration-text">
+        Important note: For the script to work, you need to load the <a href="MPKmini_Bitwig_Preset">Bitwig
+        Studio preset</a> into the MPKmini using the Akai editor.
+    </div>
 <div id="legend">
     <div id="all-off" class="legend-section">
         <div class="legend-column-header">CC + PROG CHANGE OFF</div>
@@ -44,17 +48,23 @@
                 <tbody>
                 <tr>
                     <td class="legend-control-column">P 5/1</td>
-                    <td class="legend-explanation-column">Previous/next track = cursor track.</td>
+                    <td class="legend-explanation-column">Previous/next Track = Cursor Track.</td>
                 </tr>
                 <tr>
-                    <td class="legend-control-column">
-                        P 6/2
-                    </td>
-                    <td class="legend-explanation-column">Previous/next device = cursor device.</td>
+                    <td class="legend-control-column">P 6/2</td>
+                    <td class="legend-explanation-column">Previous/next Device = Cursor Device.</td>
                 </tr>
                 <tr>
                     <td class="legend-control-column">P 7/3</td>
-                    <td class="legend-explanation-column">Transpose pads up/down.</td>
+                    <td class="legend-explanation-column">Transpose Pads up/down.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 8</td>
+                    <td class="legend-explanation-column">Toggle Macro/Device Mapping Mode for Knobs K 1-8</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 4</td>
+                    <td class="legend-explanation-column">In Device Mapping Mode: Cycle through User Device Maps</td>
                 </tr>
                 </tbody>
             </table>
@@ -69,16 +79,36 @@
                 </thead>
                 <tbody>
                 <tr>
-                    <td class="legend-control-column">P 1-4</td>
-                    <td class="legend-explanation-column">Toggle views.</td>
+                    <td class="legend-control-column">P 5</td>
+                    <td class="legend-explanation-column">Transport: Stop.</td>
                 </tr>
                 <tr>
-                    <td class="legend-control-column">Hold P 8 pressed</td>
-                    <td class="legend-explanation-column">and move a knob to full right to select a macro for mapping. do again to exit mapping.</td>
+                    <td class="legend-control-column">P 6</td>
+                    <td class="legend-explanation-column">Transport: Play.</td>
                 </tr>
                 <tr>
-                    <td class="legend-control-column">P 7/3</td>
-                    <td class="legend-explanation-column">Transpose pads up/down.</td>
+                    <td class="legend-control-column">P 7</td>
+                    <td class="legend-explanation-column">Transport: Record.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 8</td>
+                    <td class="legend-explanation-column">Toggle Overdub.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 1</td>
+                    <td class="legend-explanation-column">Arm the current Track.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 2</td>
+                    <td class="legend-explanation-column">Solo the current Track.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 3</td>
+                    <td class="legend-explanation-column">Mute the current Track.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 4</td>
+                    <td class="legend-explanation-column">Toggle Launcher Overdub.</td>
                 </tr>
                 </tbody>
             </table>
@@ -96,24 +126,24 @@
                 </thead>
                 <tbody>
                 <tr>
-                    <td class="legend-control-column">P 1</td>
-                    <td class="legend-explanation-column">Toggle solo on selected track.</td>
-                </tr>
-                <tr>
-                    <td class="legend-control-column">P 5</td>
-                    <td class="legend-explanation-column">Toggle arm on selected track.</td>
+                    <td class="legend-control-column">P 5/1</td>
+                    <td class="legend-explanation-column">Select previous/next Preset.</td>
                 </tr>
                 <tr>
                     <td class="legend-control-column">P 6/2</td>
-                    <td class="legend-explanation-column">Select previous/next preset.</td>
+                    <td class="legend-explanation-column">Select previous/next Preset Category.</td>
                 </tr>
                 <tr>
                     <td class="legend-control-column">P 7/3</td>
-                    <td class="legend-explanation-column">Select previous/next preset category.</td>
+                    <td class="legend-explanation-column">Select previous/next Preset Creator.</td>
                 </tr>
                 <tr>
-                    <td class="legend-control-column">P 8/4</td>
-                    <td class="legend-explanation-column">Select previous/next preset creator.</td>
+                    <td class="legend-control-column">P 8</td>
+                    <td class="legend-explanation-column">Toggle Macro/Device Mapping Mode for Knobs K 1-8</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 4</td>
+                    <td class="legend-explanation-column">In Device Mapping Mode: Cycle through User Device Maps</td>
                 </tr>
                 </tbody>
             </table>
@@ -128,8 +158,56 @@
                 </thead>
                 <tbody>
                 <tr>
+                    <td class="legend-control-column">P 5</td>
+                    <td class="legend-explanation-column">Toggle Inspector.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 6</td>
+                    <td class="legend-explanation-column">Toggle Perspective</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 7</td>
+                    <td class="legend-explanation-column">Cycle through Project Tabs</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 8</td>
+                    <td class="legend-explanation-column">Select/Toggle Browser</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 1</td>
+                    <td class="legend-explanation-column">Select/Toggle Note Editor Panel.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 2</td>
+                    <td class="legend-explanation-column">Select/Toggle Automation Editor Panel.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 3</td>
+                    <td class="legend-explanation-column">Select/Toggle Device Panel.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">P 4</td>
+                    <td class="legend-explanation-column">Select/Toggle Mixer Panel.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="general" class="legend-column">
+            <table class="legend-column">
+                <thead>
+                <tr>
+                    <th class="legend-control-column"></th>
+                    <th class="legend-explanation-column">GENERAL</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
                     <td class="legend-control-column">K 1-8</td>
-                    <td class="legend-explanation-column">Macros of the cursor device.</td>
+                    <td class="legend-explanation-column">Macros or Device Mappings of the Cursor Device, depending on Mode settings.</td>
+                </tr>
+                <tr>
+                    <td class="legend-control-column">I/O Panel</td>
+                    <td class="legend-explanation-column">Drum Pad Transpose and Knob Mode are saved per Project. <br>See the Bitwig Studio I/O Panel for the settings.</td>
                 </tr>
                 </tbody>
             </table>
@@ -137,7 +215,7 @@
     </div>
 </div>
 <div id="footer">
-    Version Nr: 1.0 | Made by: Bitwig, Berlin, Germany | Contact: <a
+    Version Nr: 1.1 | Made by: Bitwig, Berlin, Germany | Contact: <a
         href="mailto:contact@bitwig.com">contact@bitwig.com</a>, <a href="http://www.bitwig.com/">www.bitwig.com</a> |
     Package: Bitwig Factory Scripts
 </div>
