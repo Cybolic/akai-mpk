@@ -82,6 +82,7 @@ function init()
 	// sections
 	transport = host.createTransport();
 	application = host.createApplication();
+	masterTrack = host.createMasterTrack(0);
 	cursorTrack = host.createCursorTrack(2, 0);
 	cursorDevice = cursorTrack.getPrimaryDevice();
 
@@ -119,10 +120,18 @@ function onMidi(status, data1, data2)
 				switch (data1)
 				{
 				case CC.K1:
-					cursorTrack.getVolume().inc(data2 > 64 ? data2-128 : data2, 128);
+					if (isShift) {
+						masterTrack.getVolume().inc(data2 > 64 ? data2-128 : data2, 128);
+					} else {
+						cursorTrack.getVolume().inc(data2 > 64 ? data2-128 : data2, 128);
+					}
 					break;
 				case CC.K2:
-					cursorTrack.getPan().inc(data2 > 64 ? data2-128 : data2, 127);
+					if (isShift) {
+						cursorTrack.getPan().inc(data2 > 64 ? data2-128 : data2, 127);
+					} else {
+						masterTrack.getPan().inc(data2 > 64 ? data2-128 : data2, 127);
+					}
 					break;
 				case CC.K3:
 					cursorTrack.getSend(0).inc(data2 > 64 ? data2-128 : data2, 128);
